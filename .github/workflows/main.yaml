@@ -57,7 +57,7 @@ jobs:
             fi
             
             # Clone the repository
-            git clone https://github.com/arpit1605/SimpleFlaskApp.git /home/${{ secrets.STAGING_EC2_USERNAME }}/SimpleFlaskApp
+            git clone https://github.com/AkankshaJairath/GitHub-Actions-CI-CD-Pipeline-Flask-App.git /home/${{ secrets.STAGING_EC2_USERNAME }}/SimpleFlaskApp
             cd /home/${{ secrets.STAGING_EC2_USERNAME }}/SimpleFlaskApp
             
             # Update and install dependencies using apt
@@ -96,7 +96,7 @@ jobs:
             fi
             
             # Clone the repository
-            git clone https://github.com/arpit1605/SimpleFlaskApp.git /home/${{ secrets.PRODUCTION_EC2_USERNAME }}/SimpleFlaskApp
+            git clone https://github.com/AkankshaJairath/GitHub-Actions-CI-CD-Pipeline-Flask-App.git /home/${{ secrets.PRODUCTION_EC2_USERNAME }}/SimpleFlaskApp
             cd /home/${{ secrets.PRODUCTION_EC2_USERNAME }}/SimpleFlaskApp
             
             # Update and install dependencies using apt
