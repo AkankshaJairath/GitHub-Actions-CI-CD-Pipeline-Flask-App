@@ -1,0 +1,115 @@
+name: CI/CD for hosting a Flask-based Python Web Application
+
+on:
+  push:
+    branches:
+      - dev    # Trigger staging deployment on dev branch push
+      - main   # Trigger production deployment on main branch push
+  release:
+    types: [published]  # Trigger production deployment on release
+
+jobs:
+  # Step 1: Install dependencies, run tests, and build on the GitHub Runner (not on EC2)
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies globally
+        run: |
+          python -m pip install --upgrade pip
+          pip install --user -r requirements.txt  # Install dependencies globally on the GitHub runner
+
+      - name: Run unit tests
+        run: |
+          pytest
+        env:
+          CI: true
+
+      - name: Build the application
+        run: |
+          echo "Building the application"
+
+  # Step 2: Deploy to Staging (for dev branch)
+  deploy-to-staging:
+    if: github.ref == 'refs/heads/dev'  # Deploy only if it's a push to the dev branch
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    steps:
+      - name: Deploy to Staging EC2 Instance
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.STAGING_EC2_USERNAME }}@${{ secrets.STAGING_EC2_HOST }} << 'EOF'
+            set -e
+            echo "Starting deployment to STAGING..."
+            
+            # Remove the directory if it exists
+            if [ -d "/home/${{ secrets.STAGING_EC2_USERNAME }}/SimpleFlaskApp" ]; then
+              rm -rf /home/${{ secrets.STAGING_EC2_USERNAME }}/SimpleFlaskApp
+            fi
+            
+            # Clone the repository
+            git clone https://github.com/arpit1605/SimpleFlaskApp.git /home/${{ secrets.STAGING_EC2_USERNAME }}/SimpleFlaskApp
+            cd /home/${{ secrets.STAGING_EC2_USERNAME }}/SimpleFlaskApp
+            
+            # Update and install dependencies using apt
+            sudo apt-get update
+            sudo apt-get install -y python3-gunicorn python3-flask
+
+            # Run Gunicorn in the background using nohup
+            nohup /usr/bin/gunicorn --workers 3 app:app --bind 0.0.0.0:${{ secrets.STAGING_PORT }} > gunicorn.log 2>&1 &
+            
+            echo "Deployment completed, Gunicorn is running in the background"
+          EOF
+        env:
+          STAGING_EC2_HOST: ${{ secrets.STAGING_EC2_HOST }}
+          STAGING_EC2_SSH_KEY: ${{ secrets.STAGING_EC2_SSH_KEY }}
+          STAGING_EC2_USERNAME: ${{ secrets.STAGING_EC2_USERNAME }}
+          STAGING_PORT: ${{ secrets.STAGING_PORT }}
+
+  # Step 3: Deploy to Production (for main branch or release)
+  deploy-to-production:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'release'  # Deploy to production if it's a push to main or a release
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    steps:
+      - name: Deploy to Production EC2 Instance
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.PRODUCTION_EC2_USERNAME }}@${{ secrets.PRODUCTION_EC2_HOST }} << 'EOF'
+            set -e
+            echo "Starting deployment to PRODUCTION..."
+            
+            # Remove the directory if it exists
+            if [ -d "/home/${{ secrets.PRODUCTION_EC2_USERNAME }}/SimpleFlaskApp" ]; then
+              rm -rf /home/${{ secrets.PRODUCTION_EC2_USERNAME }}/SimpleFlaskApp
+            fi
+            
+            # Clone the repository
+            git clone https://github.com/arpit1605/SimpleFlaskApp.git /home/${{ secrets.PRODUCTION_EC2_USERNAME }}/SimpleFlaskApp
+            cd /home/${{ secrets.PRODUCTION_EC2_USERNAME }}/SimpleFlaskApp
+            
+            # Update and install dependencies using apt
+            sudo apt-get update
+            sudo apt-get install -y python3-gunicorn python3-flask
+
+            # Run Gunicorn in the background using nohup
+            nohup /usr/bin/gunicorn --workers 3 app:app --bind 0.0.0.0:${{ secrets.PRODUCTION_PORT }} > gunicorn.log 2>&1 &
+            
+            echo "Deployment completed, Gunicorn is running in the background"
+          EOF
+        env:
+          PRODUCTION_EC2_HOST: ${{ secrets.PRODUCTION_EC2_HOST }}
+          PRODUCTION_EC2_SSH_KEY: ${{ secrets.PRODUCTION_EC2_SSH_KEY }}
+          PRODUCTION_EC2_USERNAME: ${{ secrets.PRODUCTION_EC2_USERNAME }}
+          PRODUCTION_PORT: ${{ secrets.PRODUCTION_PORT }}
