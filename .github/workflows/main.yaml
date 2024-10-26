@@ -63,7 +63,7 @@ jobs:
             # Update and install dependencies using apt
             sudo apt-get update
             sudo apt-get install -y python3-flask
-            sudo apt-get install gunicorn
+            sudo apt-get install -y gunicorn
             
 
             # Run Gunicorn in the background using nohup
