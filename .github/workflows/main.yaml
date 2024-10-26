@@ -102,6 +102,7 @@ jobs:
             # Update and install dependencies using apt
             sudo apt-get update
             sudo apt-get install -y python3-gunicorn python3-flask
+            sudo apt-get install gunicorn
 
             # Run Gunicorn in the background using nohup
             nohup /usr/bin/gunicorn --workers 3 app:app --bind 0.0.0.0:${{ secrets.PRODUCTION_PORT }} > gunicorn.log 2>&1 &
