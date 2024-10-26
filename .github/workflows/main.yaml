@@ -57,12 +57,14 @@ jobs:
             fi
             
             # Clone the repository
-            git clone https://github.com/arpit1605/SimpleFlaskApp.git /home/${{ secrets.STAGING_EC2_USERNAME }}/SimpleFlaskApp
+            git clone https://github.com/AkankshaJairath/GitHub-Actions-CI-CD-Pipeline-Flask-App.git /home/${{ secrets.STAGING_EC2_USERNAME }}/SimpleFlaskApp
             cd /home/${{ secrets.STAGING_EC2_USERNAME }}/SimpleFlaskApp
             
             # Update and install dependencies using apt
             sudo apt-get update
-            sudo apt-get install -y python3-gunicorn python3-flask
+            sudo apt-get install -y python3-flask
+            sudo apt-get install gunicorn
+            
 
             # Run Gunicorn in the background using nohup
             nohup /usr/bin/gunicorn --workers 3 app:app --bind 0.0.0.0:${{ secrets.STAGING_PORT }} > gunicorn.log 2>&1 &
@@ -96,12 +98,13 @@ jobs:
             fi
             
             # Clone the repository
-            git clone https://github.com/arpit1605/SimpleFlaskApp.git /home/${{ secrets.PRODUCTION_EC2_USERNAME }}/SimpleFlaskApp
+            git clone https://github.com/AkankshaJairath/GitHub-Actions-CI-CD-Pipeline-Flask-App.git /home/${{ secrets.PRODUCTION_EC2_USERNAME }}/SimpleFlaskApp
             cd /home/${{ secrets.PRODUCTION_EC2_USERNAME }}/SimpleFlaskApp
             
             # Update and install dependencies using apt
             sudo apt-get update
-            sudo apt-get install -y python3-gunicorn python3-flask
+            sudo apt-get install -y python3-flask
+            sudo apt-get install gunicorn
 
             # Run Gunicorn in the background using nohup
             nohup /usr/bin/gunicorn --workers 3 app:app --bind 0.0.0.0:${{ secrets.PRODUCTION_PORT }} > gunicorn.log 2>&1 &
